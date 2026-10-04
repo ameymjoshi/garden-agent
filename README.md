@@ -66,6 +66,32 @@ The key variable is **ET₀ (reference evapotranspiration)** — the standard ir
 
 Worked example on the live data above: ET₀ of 4.84 mm means meaningful moisture loss, so most pots want morning water — but 51 % evening rain probability says water lightly and re-check after; UV 7.95 means shade tender seedlings; the 22.3 °C minimum is comfortable, so no cold protection needed.
 
+## Two-way control (Telegram → garden)
+
+The digest is outbound only. The listener makes it conversational: you text the bot what you actually did, and it updates the state files and replies.
+
+```bash
+export TELEGRAM_BOT_TOKEN=...
+python scripts/telegram_listener.py     # long-polls; Ctrl+C to stop
+```
+
+Then send plain-language messages:
+
+| You send | Effect |
+| --- | --- |
+| `watered Tulsi and Mint` | Sets last-done = today, next-due = today + cadence, logs it |
+| `watered the plants` (no names) | Waters everything currently due |
+| `it rained` | Pushes watering for all plants by a day |
+| `fertilised Tomato` | Logs a fertilising action |
+| `sprayed neem on Chilli` | Logs a spray and adds a row to `health.md` |
+| `repotted Aloe` / `pruned Hibiscus` | Logs the action |
+| `note basil leaves curling` | Adds a free observation to today's log |
+| `/status` | Lists what is due today |
+| `/log` | Prints today's care log |
+| `/help` | Shows the command list |
+
+Parsing is deterministic (keyword + plant-name matching against `plants.md`), so it works offline. Anything it cannot understand gets a clarifying reply rather than a silent guess. The listener is stateless apart from a `.telegram_offset` file, so restarts do not replay old messages, and if `TELEGRAM_CHAT_ID` is set only that chat is accepted.
+
 ## Quickstart
 
 ```bash
@@ -79,6 +105,9 @@ python scripts/daily_digest.py        # build the digest from weather + schedule
 export TELEGRAM_BOT_TOKEN=...          # from @BotFather
 export TELEGRAM_CHAT_ID=...            # your chat id
 python scripts/daily_digest.py --notify
+
+# Two-way control: reply from Telegram to log what you did
+python scripts/telegram_listener.py
 ```
 
 No dependencies beyond the Python standard library.
@@ -99,13 +128,18 @@ garden-agent/
 │   └── care-log/2026-10-01.md
 ├── scripts/
 │   ├── fetch_weather.py
-│   ├── notify_telegram.py
-│   └── daily_digest.py
+│   ├── telegram_api.py        # Telegram Bot API helpers
+│   ├── notify_telegram.py     # outbound CLI
+│   ├── garden_actions.py      # parse messages -> update state
+│   ├── telegram_listener.py   # inbound: poll + apply + reply
+│   ├── daily_digest.py
+│   └── selftest.py
 └── .env.example
 ```
 
 ## Roadmap
 
+- [x] Two-way Telegram control — reply to log watering, fertilising, spraying.
 - [ ] Wire the agent into Copilot / Kilo / Ollama (the `.agent.md` is runtime-agnostic).
 - [ ] Plant photo diagnosis with a local vision model.
 - [ ] Cron the daily digest.

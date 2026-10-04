@@ -21,6 +21,7 @@ specific daily care actions.
 - Read weather only via `scripts/fetch_weather.py`.
 - Read Telegram credentials from the environment — never hardcode them.
 - Update `garden/schedule.md` and add a `garden/care-log/` entry when acting.
+- Keep the inbound message grammar in `scripts/garden_actions.py` in sync with the README table.
 
 ### Ask first
 - Adding a third-party dependency.
@@ -43,3 +44,4 @@ specific daily care actions.
 - Open-Meteo returns arrays; the first element is today.
 - ET₀ is a *daily sum* in mm — the higher it is, the more water is lost.
 - The digest must stay under ~150 words to be readable at a glance.
+- The Telegram listener only understands the phrases defined in `garden_actions.py`; add new intents there, not in the listener.

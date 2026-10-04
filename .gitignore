@@ -11,6 +11,10 @@ __pycache__/
 venv/
 .pytest_cache/
 
+# garden runtime state
+.garden_offset
+garden/.telegram_offset
+
 # OS
 .DS_Store
 Thumbs.db
