@@ -34,7 +34,8 @@ HELP = (
     "  - repotted Aloe\n"
     "  - it rained\n"
     "  - note basil leaves curling\n"
-    "Commands: /status  /log  /help"
+    "Commands: /status  /log  /help\n"
+    "Parser: rules by default; set GARDEN_PARSER=llm (or pass --llm) for free phrasing."
 )
 
 
@@ -52,7 +53,7 @@ def _save_offset(offset: int) -> None:
     OFFSET_FILE.write_text(str(offset), encoding="utf-8")
 
 
-def handle(text: str) -> str:
+def handle(text: str, use_llm: bool | None = None) -> str:
     cmd = text.strip().lower()
     if cmd in ("/start", "/help"):
         return HELP
@@ -64,7 +65,7 @@ def handle(text: str) -> str:
         return path.read_text(encoding="utf-8") if path.exists() else "No log for today yet."
     if cmd.startswith("/"):
         return "Unknown command. Try /help."
-    return ga.apply(text)["reply"]
+    return ga.apply(text, use_llm=use_llm)["reply"]
 
 
 def _authorised(chat_id: object) -> bool:
@@ -74,7 +75,8 @@ def _authorised(chat_id: object) -> bool:
 
 def main() -> None:
     offset = _load_offset()
-    print("garden bot listening... (Ctrl+C to stop)")
+    use_llm = "--llm" in sys.argv or os.environ.get("GARDEN_PARSER", "rules").lower() == "llm"
+    print(f"garden bot listening... parser={'llm' if use_llm else 'rules'} (Ctrl+C to stop)")
     while True:
         updates = get_updates(offset, timeout=25)
         for u in updates:
@@ -85,7 +87,7 @@ def main() -> None:
             if not text or chat_id is None or not _authorised(chat_id):
                 continue
             try:
-                reply = handle(text)
+                reply = handle(text, use_llm=use_llm)
             except Exception as exc:  # noqa: BLE001
                 reply = f"Error: {exc}"
             send_message(reply, chat_id=str(chat_id))

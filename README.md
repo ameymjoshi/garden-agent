@@ -90,7 +90,36 @@ Then send plain-language messages:
 | `/log` | Prints today's care log |
 | `/help` | Shows the command list |
 
-Parsing is deterministic (keyword + plant-name matching against `plants.md`), so it works offline. Anything it cannot understand gets a clarifying reply rather than a silent guess. The listener is stateless apart from a `.telegram_offset` file, so restarts do not replay old messages, and if `TELEGRAM_CHAT_ID` is set only that chat is accepted.
+Parsing is deterministic by default (keyword + plant-name matching against `plants.md`), so it works offline with no API cost. Anything it cannot understand gets a clarifying reply rather than a silent guess. The listener is stateless apart from a `.telegram_offset` file, so restarts do not replay old messages, and if `TELEGRAM_CHAT_ID` is set only that chat is accepted.
+
+### Optional LLM parser
+
+The deterministic parser is the default and needs nothing extra. If you want it to understand freer phrasing ("gave the tomato some feed", "the chilli's looking rough, gave it a spray"), set `GARDEN_PARSER=llm`. It calls an OpenAI-compatible chat endpoint — a local Ollama server or Sarvam's cloud API — and turns the reply into the same action shape. If the model is unreachable or returns something unusable, it silently falls back to the deterministic parser, so the bot never goes deaf.
+
+```bash
+# Local (Ollama) — no API key, nothing leaves your machine
+export GARDEN_PARSER=llm
+export GARDEN_LLM_PROVIDER=ollama
+export GARDEN_LLM_MODEL=qwen2.5:1.5b
+python scripts/telegram_listener.py
+
+# Cloud (Sarvam, OpenAI-compatible endpoint)
+export GARDEN_PARSER=llm
+export GARDEN_LLM_PROVIDER=sarvam
+export SARVAM_API_KEY=...
+python scripts/telegram_listener.py
+```
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GARDEN_PARSER` | `rules` | `rules` or `llm` |
+| `GARDEN_LLM_PROVIDER` | `ollama` | `ollama` or `sarvam` |
+| `GARDEN_LLM_MODEL` | `qwen2.5:1.5b` | model id (e.g. `sarvam-105b`) |
+| `GARDEN_LLM_BASE_URL` | provider default | override the endpoint |
+| `OLLAMA_HOST` | `http://localhost:11434` | local Ollama host |
+| `SARVAM_API_KEY` | — | required when `GARDEN_LLM_PROVIDER=sarvam` |
+
+The LLM only *classifies* the message; it never writes files directly — the same validated, deterministic code applies the action, so a model mistake cannot corrupt your garden state. You can also pass `--llm` to `telegram_listener.py` instead of setting the environment variable.
 
 ## Quickstart
 
@@ -132,6 +161,7 @@ garden-agent/
 │   ├── notify_telegram.py     # outbound CLI
 │   ├── garden_actions.py      # parse messages -> update state
 │   ├── telegram_listener.py   # inbound: poll + apply + reply
+│   ├── llm_parse.py           # optional LLM-backed parser
 │   ├── daily_digest.py
 │   └── selftest.py
 └── .env.example
@@ -140,6 +170,7 @@ garden-agent/
 ## Roadmap
 
 - [x] Two-way Telegram control — reply to log watering, fertilising, spraying.
+- [x] Optional LLM-backed parser (Ollama / Sarvam), with a rules fallback.
 - [ ] Wire the agent into Copilot / Kilo / Ollama (the `.agent.md` is runtime-agnostic).
 - [ ] Plant photo diagnosis with a local vision model.
 - [ ] Cron the daily digest.

@@ -167,10 +167,29 @@ def parse_message(text: str, plant_names: list[str] | None = None) -> dict:
     return {"action": action, "plants": plants, "note": note, "raw": text}
 
 
-def apply(message: str, day: dt.date | None = None) -> dict:
-    """Parse `message`, update the state files, and return a result dict."""
+def _default_use_llm() -> bool:
+    return os.environ.get("GARDEN_PARSER", "rules").lower() == "llm"
+
+
+def apply(message: str, day: dt.date | None = None, use_llm: bool | None = None) -> dict:
+    """Parse `message`, update the state files, and return a result dict.
+
+    With use_llm=True (or GARDEN_PARSER=llm) an LLM parses the message first; the
+    deterministic parser is used if the LLM is unavailable or returns something
+    unusable.
+    """
     day = day or dt.date.today()
-    parsed = parse_message(message)
+    if use_llm is None:
+        use_llm = _default_use_llm()
+    parsed = None
+    if use_llm:
+        try:
+            from llm_parse import parse_with_llm
+            parsed = parse_with_llm(message)
+        except Exception:  # noqa: BLE001 - any failure falls back to rules
+            parsed = None
+    if parsed is None:
+        parsed = parse_message(message)
     action, plants = parsed["action"], parsed["plants"]
     result: dict = {"parsed": parsed, "day": day.isoformat(), "changed": [], "reply": ""}
 
@@ -220,3 +239,10 @@ def apply(message: str, day: dt.date | None = None) -> dict:
 
     result["reply"] = "Action not handled."
     return result
+
+
+if __name__ == "__main__":
+    import sys
+
+    _msg = " ".join(sys.argv[1:]) or "watered Tulsi"
+    print(apply(_msg)["reply"])
