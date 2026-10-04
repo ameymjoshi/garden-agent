@@ -112,7 +112,7 @@ python scripts/telegram_listener.py
 # Antigravity / Gemini (OpenAI-compatible endpoint)
 export GARDEN_PARSER=llm
 export GARDEN_LLM_PROVIDER=antigravity   # alias for 'gemini'
-export GARDEN_LLM_MODEL=gemini-3.6-flash
+export GARDEN_LLM_MODEL=gemini-3.8-flash
 export GEMINI_API_KEY=...
 python scripts/telegram_listener.py
 ```
@@ -121,7 +121,7 @@ python scripts/telegram_listener.py
 | --- | --- | --- |
 | `GARDEN_PARSER` | `rules` | `rules` or `llm` |
 | `GARDEN_LLM_PROVIDER` | `ollama` | `ollama`, `sarvam`, or `gemini` (`antigravity` = `gemini`) |
-| `GARDEN_LLM_MODEL` | per provider | model id (e.g. `gemini-3.6-flash`, `sarvam-105b`, `qwen2.5:1.5b`) |
+| `GARDEN_LLM_MODEL` | per provider | model id (e.g. `gemini-3.8-flash`, `sarvam-105b`, `qwen2.5:1.5b`) |
 | `GARDEN_LLM_BASE_URL` | provider default | override the endpoint |
 | `OLLAMA_HOST` | `http://localhost:11434` | local Ollama host |
 | `SARVAM_API_KEY` | — | required when `GARDEN_LLM_PROVIDER=sarvam` |

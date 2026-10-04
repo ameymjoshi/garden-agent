@@ -53,7 +53,7 @@ def _config() -> tuple[str, str, str]:
             "GARDEN_LLM_BASE_URL",
             "https://generativelanguage.googleapis.com/v1beta/openai",
         )
-        model = os.environ.get("GARDEN_LLM_MODEL", "gemini-3.6-flash")
+        model = os.environ.get("GARDEN_LLM_MODEL", "gemini-3.8-flash")
         key = os.environ.get("GEMINI_API_KEY", "")
     elif provider == "sarvam":
         base = os.environ.get("GARDEN_LLM_BASE_URL", "https://api.sarvam.ai/v1")
