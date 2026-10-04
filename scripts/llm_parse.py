@@ -2,17 +2,18 @@
 """Optional LLM-backed message parser.
 
 Uses an OpenAI-compatible chat endpoint, so the same code works with a local
-Ollama server or Sarvam's cloud API. If anything fails (server down, bad JSON,
-unknown action) the caller falls back to the deterministic parser in
-garden_actions.
+Ollama server, Sarvam's cloud API, or Google Gemini (the model behind the
+Antigravity IDE). If anything fails (server down, bad JSON, unknown action) the
+caller falls back to the deterministic parser in garden_actions.
 
 Environment:
-  GARDEN_PARSER=llm                  # enable (default is 'rules')
-  GARDEN_LLM_PROVIDER=ollama|sarvam  # default 'ollama'
-  GARDEN_LLM_MODEL=...               # default per provider
-  GARDEN_LLM_BASE_URL=...            # override the OpenAI-compatible base
-  OLLAMA_HOST=...                    # default http://localhost:11434
-  SARVAM_API_KEY=...                 # required when provider=sarvam
+  GARDEN_PARSER=llm                         # enable (default is 'rules')
+  GARDEN_LLM_PROVIDER=ollama|sarvam|gemini  # default 'ollama' ('antigravity' = gemini)
+  GARDEN_LLM_MODEL=...                      # default per provider
+  GARDEN_LLM_BASE_URL=...                   # override the OpenAI-compatible base
+  OLLAMA_HOST=...                           # default http://localhost:11434
+  SARVAM_API_KEY=...                        # required when provider=sarvam
+  GEMINI_API_KEY=...                        # required when provider=gemini/antigravity
 """
 from __future__ import annotations
 
@@ -45,7 +46,16 @@ SYSTEM = (
 def _config() -> tuple[str, str, str]:
     """Return (base_url, model, api_key) for the configured provider."""
     provider = os.environ.get("GARDEN_LLM_PROVIDER", "ollama").lower()
-    if provider == "sarvam":
+    if provider in ("gemini", "antigravity"):
+        # Gemini API, OpenAI-compatible endpoint. Antigravity is powered by
+        # Gemini, so 'antigravity' is accepted as an alias for 'gemini'.
+        base = os.environ.get(
+            "GARDEN_LLM_BASE_URL",
+            "https://generativelanguage.googleapis.com/v1beta/openai",
+        )
+        model = os.environ.get("GARDEN_LLM_MODEL", "gemini-3.6-flash")
+        key = os.environ.get("GEMINI_API_KEY", "")
+    elif provider == "sarvam":
         base = os.environ.get("GARDEN_LLM_BASE_URL", "https://api.sarvam.ai/v1")
         model = os.environ.get("GARDEN_LLM_MODEL", "sarvam-105b")
         key = os.environ.get("SARVAM_API_KEY", "")

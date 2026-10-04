@@ -94,7 +94,7 @@ Parsing is deterministic by default (keyword + plant-name matching against `plan
 
 ### Optional LLM parser
 
-The deterministic parser is the default and needs nothing extra. If you want it to understand freer phrasing ("gave the tomato some feed", "the chilli's looking rough, gave it a spray"), set `GARDEN_PARSER=llm`. It calls an OpenAI-compatible chat endpoint — a local Ollama server or Sarvam's cloud API — and turns the reply into the same action shape. If the model is unreachable or returns something unusable, it silently falls back to the deterministic parser, so the bot never goes deaf.
+The deterministic parser is the default and needs nothing extra. If you want it to understand freer phrasing ("gave the tomato some feed", "the chilli's looking rough, gave it a spray"), set `GARDEN_PARSER=llm`. It calls an OpenAI-compatible chat endpoint — a local Ollama server, Sarvam's cloud API, or Google Gemini (the model behind Antigravity) — and turns the reply into the same action shape. If the model is unreachable or returns something unusable, it silently falls back to the deterministic parser, so the bot never goes deaf.
 
 ```bash
 # Local (Ollama) — no API key, nothing leaves your machine
@@ -108,18 +108,35 @@ export GARDEN_PARSER=llm
 export GARDEN_LLM_PROVIDER=sarvam
 export SARVAM_API_KEY=...
 python scripts/telegram_listener.py
+
+# Antigravity / Gemini (OpenAI-compatible endpoint)
+export GARDEN_PARSER=llm
+export GARDEN_LLM_PROVIDER=antigravity   # alias for 'gemini'
+export GARDEN_LLM_MODEL=gemini-3.6-flash
+export GEMINI_API_KEY=...
+python scripts/telegram_listener.py
 ```
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `GARDEN_PARSER` | `rules` | `rules` or `llm` |
-| `GARDEN_LLM_PROVIDER` | `ollama` | `ollama` or `sarvam` |
-| `GARDEN_LLM_MODEL` | `qwen2.5:1.5b` | model id (e.g. `sarvam-105b`) |
+| `GARDEN_LLM_PROVIDER` | `ollama` | `ollama`, `sarvam`, or `gemini` (`antigravity` = `gemini`) |
+| `GARDEN_LLM_MODEL` | per provider | model id (e.g. `gemini-3.6-flash`, `sarvam-105b`, `qwen2.5:1.5b`) |
 | `GARDEN_LLM_BASE_URL` | provider default | override the endpoint |
 | `OLLAMA_HOST` | `http://localhost:11434` | local Ollama host |
 | `SARVAM_API_KEY` | — | required when `GARDEN_LLM_PROVIDER=sarvam` |
+| `GEMINI_API_KEY` | — | required when `GARDEN_LLM_PROVIDER=gemini`/`antigravity` |
 
 The LLM only *classifies* the message; it never writes files directly — the same validated, deterministic code applies the action, so a model mistake cannot corrupt your garden state. You can also pass `--llm` to `telegram_listener.py` instead of setting the environment variable.
+
+## Running the agent
+
+The care logic lives in a runtime-agnostic agent definition; two copies ship so it works in whichever tool you use:
+
+- **Antigravity** (VS Code extension / IDE / CLI): `.agents/agents/garden-agent/agent.md`. Antigravity discovers workspace agents under `.agents/agents/` and reads the repo's `AGENTS.md` for context. Sign in with a Google account (the free tier works), open this folder as a project, and pick `garden-agent` from the agent list.
+- **GitHub Copilot / Kilo**: `.github/agents/garden-agent.agent.md`.
+
+Both point at the same scripts and `garden/` state, so switching runtimes does not change the garden data.
 
 ## Quickstart
 
@@ -147,7 +164,8 @@ No dependencies beyond the Python standard library.
 garden-agent/
 ├── README.md
 ├── AGENTS.md
-├── .github/agents/garden-agent.agent.md   # the agent definition
+├── .agents/agents/garden-agent/agent.md   # Antigravity agent definition
+├── .github/agents/garden-agent.agent.md   # Copilot / Kilo agent definition
 ├── garden/
 │   ├── config.md
 │   ├── plants.md
@@ -170,8 +188,8 @@ garden-agent/
 ## Roadmap
 
 - [x] Two-way Telegram control — reply to log watering, fertilising, spraying.
-- [x] Optional LLM-backed parser (Ollama / Sarvam), with a rules fallback.
-- [ ] Wire the agent into Copilot / Kilo / Ollama (the `.agent.md` is runtime-agnostic).
+- [x] Optional LLM-backed parser (Ollama / Sarvam / Gemini), with a rules fallback.
+- [x] Antigravity-native agent definition under `.agents/agents/`.
 - [ ] Plant photo diagnosis with a local vision model.
 - [ ] Cron the daily digest.
 - [ ] Seasonal sowing planner.

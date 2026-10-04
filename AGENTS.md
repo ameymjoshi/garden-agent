@@ -8,6 +8,9 @@ Guidance for AI coding agents working in this repository.
 plant inventory and care history with live local weather (Open-Meteo) to produce
 specific daily care actions.
 
+Agent definitions live in `.agents/agents/garden-agent/agent.md` (Antigravity) and
+`.github/agents/garden-agent.agent.md` (Copilot / Kilo).
+
 ## Stack
 
 - Python 3.12, standard library only (no third-party deps).
